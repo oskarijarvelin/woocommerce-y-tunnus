@@ -3,7 +3,7 @@
 /*
  * Plugin Name:       Y-tunnus WooCommerceen
  * Plugin URI:        https://oskarijarvelin.fi
- * Description:
+ * Description:       Lisäosa, joka lisää kentän Y-tunnukselle WooCommerce-verkkokauppaan
  * Version:           1.0.0
  * Requires at least: 6.2
  * Requires PHP:      8.2
