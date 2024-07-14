@@ -3,7 +3,7 @@
 /*
  * Plugin Name:       Y-tunnus WooCommerceen
  * Plugin URI:        https://oskarijarvelin.fi
- * Description:       Handle the basics with this plugin.
+ * Description:
  * Version:           1.0.0
  * Requires at least: 6.2
  * Requires PHP:      8.2
@@ -17,37 +17,78 @@
  */
 
 // Add Y-tunnus field to the checkout page
-add_action( 'woocommerce_after_order_notes', 'wcytunnus_add_field' );
-function wcytunnus_add_field( $checkout ) {
-    echo '<div id="wcytunnus_field"><h2>' . __('Y-tunnus') . '</h2>';
+add_action( 'woocommerce_billing_fields', 'wcytunnus_add_field' );
+function wcytunnus_add_field( $fields ) {
 
-    woocommerce_form_field( 'wcytunnus', array(
-        'type'          => 'text',
-        'class'         => array( 'wcytunnus-field form-row-wide') ,
-        'label'         => __( 'Y-tunnus' ),
-        'placeholder'   => __( 'Yrityksen Y-tunnus' ),
-    ), $checkout->get_value( 'wcytunnus' ));
+    $fields[ 'wcytunnus' ]   = array(
+		'label'        => 'Y-tunnus',
+		'required'     => false,
+		'class'        => array( 'form-row-wide' ),
+		'priority'     => 30,
+	);
 
-    echo '</div>';
+	return $fields;
 }
 
-// Validate Y-tunnus field
-add_action( 'woocommerce_checkout_update_order_meta', 'wcytunnus_update_order_meta' );
-function wcytunnus_update_order_meta( $order_id ) {
-    if ( ! empty( $_POST['wcytunnus'] ) ) {
-        update_post_meta( $order_id, '_wcytunnus', sanitize_text_field( $_POST['wcytunnus'] ) );
+// Add Y-tunnus field to customer details
+add_filter( 'woocommerce_customer_meta_fields', 'wcytunnus_customer_field' );
+function wcytunnus_customer_field( $admin_fields ) {
+
+	$admin_fields[ 'billing' ][ 'fields' ][ 'wcytunnus' ] = array(
+		'label' => 'Y-tunnus',
+		'description' => 'Yrityksen Y-tunnus',
+	);
+
+	return $admin_fields;
+}
+
+// Save Y-tunnus field to the order meta
+add_action('woocommerce_checkout_update_order_meta','wcytunnus_update_order_meta');
+function wcytunnus_update_order_meta($order_id) {
+    if (!empty($_POST['billing']['wcytunnus'])) {
+        update_post_meta($order_id, 'wcytunnus', sanitize_text_field($_POST['billing']['wcytunnus']));
     }
 }
 
-// Display Y-tunnus on the order edit page
+// Display Y-tunnus field on the order edit page
 add_action( 'woocommerce_admin_order_data_after_billing_address', 'wcytunnus_admin_order_meta', 10, 1 );
 function wcytunnus_admin_order_meta( $order ) {
-    echo '<p><strong>' . __( 'Y-tunnus', 'wcytunnus' ) . ':</strong> ' . get_post_meta( $order->id, '_wcytunnus', true ) . '</p>';
+	?>
+    <div class="address">
+        <p><strong>Y-tunnus:</strong><?php echo $order->get_meta( 'wcytunnus' ); ?>
+        </p>
+    </div>
+    <div class="edit_address">
+        <?php
+            woocommerce_wp_text_input( array(
+                'id' => 'wcytunnus',
+                'label' => 'Y-tunnus:',
+                'value' => $order->get_meta( 'wcytunnus' ),
+                'wrapper_class' => 'form-field-wide'
+            ) );
+        ?>
+    </div>
+	<?php
+}
+
+// Process and save the Y-tunnus field
+add_action( 'woocommerce_process_shop_order_meta', 'misha_save_general_details' );
+function misha_save_general_details( $order_id ){
+	$order = wc_get_order( $order_id );
+	$order->update_meta_data( 'wcytunnus', wc_clean( $_POST[ 'wcytunnus' ] ) );
+	$order->save();
+}
+
+// Load Ajax custom field data as customer billing/shipping address fields
+add_filter( 'woocommerce_ajax_get_customer_details' , 'add_custom_fields_to_ajax_customer_details', 10, 3 );
+function add_custom_fields_to_ajax_customer_details( $data, $customer, $user_id ) {
+    $data['wcytunnus'] = $customer->get_meta('wcytunnus');
+    return $data;
 }
 
 // Display Y-tunnus on the order email
 add_filter( 'woocommerce_email_order_meta_keys', 'wcytunnus_email' );
 function wcytunnus_email( $keys ) {
-     $keys['Y-tunnus'] = '_wcytunnus';
-     return $keys;
+    $keys['Y-tunnus'] = 'wcytunnus';
+    return $keys;
 }
