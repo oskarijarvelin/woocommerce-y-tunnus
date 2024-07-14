@@ -16,6 +16,10 @@
  * Requires Plugins:  woocommerce
  */
 
+/*
+*       Very special thanks to Misha Rudrastyh for the code snippets, go check his awesome website: https://rudrastyh.com/
+*/
+
 // Add Y-tunnus field to the checkout page
 add_action( 'woocommerce_billing_fields', 'wcytunnus_add_field' );
 function wcytunnus_add_field( $fields ) {
